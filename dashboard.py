@@ -48,7 +48,38 @@ start_date, end_date = st.sidebar.date_input(
 if start_date > end_date:
     st.sidebar.error("Start date must be before end date.")
 
+institutions = sorted(df["InstitutionName"].dropna().unique())
+selected_institutions = st.sidebar.multiselect(
+    "Select institution(s)",
+    institutions
+)
 
+metric_choice = st.sidebar.selectbox(
+    "Map show", ["TotalConfirmed", "TotalDeaths"]
+)
+
+#Apply filters to the dataframe
+filtered_df = df[
+    (df["Date"].dt.date >= start_date) & (df["Date"].dt.date <= end_date) &
+    (df["InstitutionName"].isin(selected_institutions))
+].copy()
+
+if filtered_df.empty:
+    st.warning("No records match the selected filters.")
+    st.stop()
+
+# Use latest record per institution for institution-level KPIs and map
+latest_idx = filtered_df.groupby("InstitutionName")["Date"].idxmax()
+latest_df = filtered_df.loc[latest_idx].copy()
+
+
+#KPI Section
+st.subheader("Key Performance Indicators")
+kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+
+kpi1.metric("Total Institutions", latest_df["InstitutionName"].nunique())
+kpi2.metric("Total Confirmed Cases", f"{int(latest_df['TotalConfirmed'].sum()):,}")
+kpi3.metric("Total Deaths", f"{int(latest_df['TotalDeaths'].sum()):,}")
 
 
 
