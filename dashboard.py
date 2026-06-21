@@ -34,6 +34,23 @@ df = data
 #Dashboard filters in the sidebar
 st.sidebar.header("Dashboard Filters")
 
+#adding date filter
+min_date = df["Date"].min().date()
+max_date = df["Date"].max().date()
+
+start_date, end_date = st.sidebar.date_input(
+    "Select date range",
+    value=(min_date, max_date),
+    min_value=min_date,
+    max_value=max_date
+)
+
+if start_date > end_date:
+    st.sidebar.error("Start date must be before end date.")
+
+
+
+
 
 #Tab Layout
 tab1, tab2, tab3, tab4 = st.tabs([
