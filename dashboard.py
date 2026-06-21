@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+st.set_page_config(page_title="California COVID-19 Institutional Dashboard", layout="wide") 
+
 #Load Data from CSV
 data = pd.read_csv("covid19dashboard.csv")
 
