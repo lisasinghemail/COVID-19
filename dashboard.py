@@ -14,3 +14,40 @@ st.markdown(
     How did activity change over time?, How severe were the cases of Covid-19 spread?
     """
 )
+
+# data cleaning and preprocessing
+data["Date"] = pd.to_datetime(data["Date"], errors="coerce")
+numeric_cols = ["Latitude", "Longitude", "TotalConfirmed", "TotalDeaths"]
+for col in numeric_cols:
+    data[col] = pd.to_numeric(data[col], errors="coerce")
+
+data = data.dropna(subset=["Date", "InstitutionName", "Latitude", "Longitude"])
+data["Month"] = data["Date"].dt.to_period("M").astype(str)
+data["DeathRate"] = data.apply(
+    lambda r: (r["TotalDeaths"] / r["TotalConfirmed"] * 100) if r["TotalConfirmed"] > 0 else 0,
+    axis=1
+)
+
+df = data
+
+
+#Dashboard filters in the sidebar
+st.sidebar.header("Dashboard Filters")
+
+
+#Tab Layout
+tab1, tab2, tab3, tab4 = st.tabs([
+    "Overview", "Institution Comparison", "Time Trends", "Data Source"
+])
+
+with tab1:
+    st.subheader("Geographic Distribution of COVID-19 Activity")
+    st.caption("Each bubble represents an institution. Larger bubbles indicate higher values for the selected map metric.")
+with tab2:
+    st.subheader("Institution Comparison")
+    st.caption("This section compares burden and severity across selected institutions using the most recent record in the selected date range.")
+with tab3:
+    st.subheader("Time Series Analysis")
+    st.caption("The line chart shows how confirmed cases changed over time for the selected institutions.")
+with tab4:
+     st.subheader("Project Documentation")
