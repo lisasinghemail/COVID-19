@@ -51,7 +51,7 @@ if start_date > end_date:
 institutions = sorted(df["InstitutionName"].dropna().unique())
 selected_institutions = st.sidebar.multiselect(
     "Select institution(s)",
-    institutions, , default=institutions
+    institutions, default=institutions
 )
 
 metric_choice = st.sidebar.selectbox(
@@ -93,7 +93,7 @@ with tab1:
     st.caption("Each bubble represents an institution. Larger bubbles indicate higher values for the selected map metric.")
 
      
-map = px.scatter_mapbox(
+    map = px.scatter_mapbox(
         latest_df,
         lat="Latitude",
         lon="Longitude",
@@ -112,6 +112,35 @@ map = px.scatter_mapbox(
     )
     map.update_layout(mapbox_style="open-street-map", margin={"r":0,"t":0,"l":0,"b":0})
     st.plotly_chart(map, use_container_width=True)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Top 10Institutions by Confirmed Cases")
+        top_confirmed = latest_df.sort_values("TotalConfirmed", ascending=False).head(10)
+        fig_bar = px.bar(
+            top_confirmed,
+            x="TotalConfirmed",
+            y="InstitutionName",
+            orientation="h",
+            text="TotalConfirmed",
+            labels={"TotalConfirmed": "Confirmed Cases", "InstitutionName": "Institution"},
+            template="plotly_white"
+        )
+        fig_bar.update_layout(yaxis={"categoryorder":"total ascending"})
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+    with col2:
+        st.subheader("Reported Deaths by Institution")
+        top_deaths = latest_df.sort_values("TotalDeaths", ascending=False).head(10)
+        fig_pie = px.pie(
+            top_deaths,
+            values="TotalDeaths",
+            names="InstitutionName",
+            hole=0.45,
+            template="plotly_white"
+        )
+        st.plotly_chart(fig_pie, use_container_width=True)
 with tab2:
     st.subheader("Institution Comparison")
     st.caption("This section compares burden and severity across selected institutions using the most recent record in the selected date range.")
@@ -137,5 +166,38 @@ with tab2:
 with tab3:
     st.subheader("Time Series Analysis")
     st.caption("The line chart shows how confirmed cases changed over time for the selected institutions.")
+    trend_level = st.selectbox("View trend by", ["Overall", "Institution"])
+
+    if trend_level == "Overall":
+        trend_df = filtered_df.groupby("Date", as_index=False)[["TotalConfirmed", "TotalDeaths"]].sum()
+        fig_line = px.line(
+            trend_df,
+            x="Date",
+            y=["TotalConfirmed", "TotalDeaths"],
+            markers=False,
+            template="plotly_white",
+            labels={"value": "Count", "variable": "Metric"}
+        )
+    else:
+        trend_df = filtered_df.groupby(["Date", "InstitutionName"], as_index=False)["TotalConfirmed"].sum()
+        fig_line = px.line(
+            trend_df,
+            x="Date",
+            y="TotalConfirmed",
+            color="InstitutionName",
+            template="plotly_white",
+            labels={"TotalConfirmed": "Confirmed Cases", "InstitutionName": "Institution"}
+        )
+    st.plotly_chart(fig_line, use_container_width=True)
 with tab4:
-     st.subheader("Project Documentation")
+    st.subheader("Project Documentation")
+    st.markdown("Reference: https://catalog.data.gov/dataset/cdcr-population-covid-19-tracking")
+    st.markdown("Published By: California Department of Corrections and Rehabilitation")
+    st.markdown("Data First Published: September 09, 2020")
+
+    st.subheader("Dataset Preview")
+    st.write(f"Rows: {len(df):,} | Columns: {len(df.columns):,} | Institutions: {df['InstitutionName'].nunique():,}")
+    st.table(df.head(10))
+
+    csv = filtered_df.to_csv(index=False).encode("utf-8")
+    st.download_button("Download Filtered Data", csv, "filtered_covid19_data.csv", "text/csv")
