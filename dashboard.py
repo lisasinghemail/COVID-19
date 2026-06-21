@@ -51,7 +51,7 @@ if start_date > end_date:
 institutions = sorted(df["InstitutionName"].dropna().unique())
 selected_institutions = st.sidebar.multiselect(
     "Select institution(s)",
-    institutions
+    institutions, , default=institutions
 )
 
 metric_choice = st.sidebar.selectbox(
@@ -91,9 +91,49 @@ tab1, tab2, tab3, tab4 = st.tabs([
 with tab1:
     st.subheader("Geographic Distribution of COVID-19 Activity")
     st.caption("Each bubble represents an institution. Larger bubbles indicate higher values for the selected map metric.")
+
+     
+map = px.scatter_mapbox(
+        latest_df,
+        lat="Latitude",
+        lon="Longitude",
+        size=metric_choice,
+        color="TotalConfirmed",
+        hover_name="InstitutionName",
+        hover_data={
+            "TotalConfirmed": ":,",
+            "TotalDeaths": ":,",
+            "Latitude": False,
+            "Longitude": False
+        },
+        zoom=4,
+        height=560,
+        color_continuous_scale="Reds"
+    )
+    map.update_layout(mapbox_style="open-street-map", margin={"r":0,"t":0,"l":0,"b":0})
+    st.plotly_chart(map, use_container_width=True)
 with tab2:
     st.subheader("Institution Comparison")
     st.caption("This section compares burden and severity across selected institutions using the most recent record in the selected date range.")
+
+    comparison_metric = st.radio(
+        "Choose comparison metric",
+        ["TotalConfirmed", "TotalDeaths", "DeathRate"],
+        horizontal=True
+    )
+
+    compare_df = latest_df.sort_values(comparison_metric, ascending=False)
+    fig_compare = px.bar(
+        compare_df,
+        x="InstitutionName",
+        y=comparison_metric,
+        color=comparison_metric,
+        text=comparison_metric,
+        labels={"InstitutionName": "Institution", comparison_metric: comparison_metric.replace("Total", "Total ")},
+        template="plotly_white"
+    )
+    fig_compare.update_layout(xaxis_tickangle=-45)
+    st.plotly_chart(fig_compare, use_container_width=True)
 with tab3:
     st.subheader("Time Series Analysis")
     st.caption("The line chart shows how confirmed cases changed over time for the selected institutions.")
